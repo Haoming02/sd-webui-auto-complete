@@ -1,0 +1,24 @@
+#suggestions {
+    z-index: 69;
+    max-height: 144px;
+    position: absolute;
+    overflow-y: auto;
+    display: none;
+    width: auto;
+
+    border: 2px solid var(--border-color-primary);
+    background-color: var(--block-background-fill);
+    border-radius: 0.5em;
+}
+
+#suggestions li {
+    margin: 4px;
+    padding: 4px;
+    cursor: pointer;
+    background-color: var(--background-fill-secondary);
+    color: var(--body-text-color);
+}
+
+#suggestions li.selected {
+    background-color: var(--table-row-focus);
+}
