@@ -36,14 +36,13 @@ class Trie {
 
     /** @param {string} filter @returns {string[]} */
     getMatches(filter) {
-        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
-
         const results = [];
         if (!filter) return results;
 
         const node = this.#searchPrefix(filter);
         if (node == null) return results;
 
+        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
         const dfs = (currentNode, currentPrefix) => {
             if (results.length >= limit) return;
             if (currentNode.isEndOfWord) results.push(currentPrefix);
