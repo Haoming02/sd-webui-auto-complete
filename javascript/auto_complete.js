@@ -6,8 +6,11 @@
     /** @type {HTMLUListElement} */
     let suggestions;
 
-    function show() { suggestions.style.display = "block"; }
     function hide() { suggestions.style.display = "none"; }
+    function show() {
+        suggestions.firstChild.scrollIntoView({ behavior: 'instant', block: 'center' });
+        suggestions.style.display = "block";
+    }
 
     /** @param {KeyboardEvent} event */
     function intelliSense(event) {
@@ -86,7 +89,13 @@
 
                 li.textContent = tag;
                 li.addEventListener("click", () => {
-                    input.value = currentValue.slice(0, start) + tag + currentValue.slice(end);
+                    if (start === 0) {
+                        input.value = `${tag}, ${currentValue.slice(end)}`;
+                        input.setSelectionRange(tag.length + 1, tag.length + 1);
+                    } else {
+                        input.value = `${currentValue.slice(0, start)} ${tag}, ${currentValue.slice(end)}`;
+                        input.setSelectionRange(start + tag.length + 2, start + tag.length + 2);
+                    }
                     updateInput(input);
                     hide();
                 });
