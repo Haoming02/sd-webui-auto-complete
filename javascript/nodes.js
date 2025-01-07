@@ -36,6 +36,8 @@ class Trie {
 
     /** @param {string} filter @returns {string[]} */
     getMatches(filter) {
+        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
+
         const results = [];
         if (!filter) return results;
 
@@ -43,9 +45,11 @@ class Trie {
         if (node == null) return results;
 
         const dfs = (currentNode, currentPrefix) => {
+            if (results.length >= limit) return;
             if (currentNode.isEndOfWord) results.push(currentPrefix);
             for (const char in currentNode.children) {
                 dfs(currentNode.children[char], currentPrefix + char);
+                if (results.length >= limit) return;
             }
         };
 

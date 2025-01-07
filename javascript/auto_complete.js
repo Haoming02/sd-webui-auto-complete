@@ -174,6 +174,11 @@
             if (textArea != null)
                 textArea.addEventListener("keydown", intelliSense);
         }
+
+        document.addEventListener("mousedown", (event) => {
+            if (!suggestions.contains(event.target))
+                hide();
+        });
     }
 
     const delay = 100;

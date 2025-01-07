@@ -1,5 +1,8 @@
+from modules.script_callbacks import on_ui_settings
+from modules.shared import opts, OptionInfo
 from modules import scripts
-from gradio import Textbox
+
+from gradio import Textbox, Slider
 from os import path
 
 
@@ -22,3 +25,19 @@ class ACServer(scripts.Script):
         )
 
         link.do_not_save_to_config = True
+
+
+def add_ui_settings():
+    opts.add_option(
+        "ac_limit",
+        OptionInfo(
+            64,
+            "Maximum number of suggestion entries to show",
+            Slider,
+            {"minimum": 1, "maximum": 1024, "step": 1},
+            section=("system", "System"),
+        ),
+    )
+
+
+on_ui_settings(add_ui_settings)
