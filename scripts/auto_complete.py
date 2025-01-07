@@ -15,7 +15,7 @@ class ACServer(scripts.Script):
         return scripts.AlwaysVisible if is_img2img else None
 
     def ui(self, is_img2img):
-        file = path.join(path.dirname(path.dirname(__file__)), "tags.csv")
+        file = path.join(path.dirname(path.dirname(__file__)), "tags.txt")
         link = Textbox(
             value=file,
             visible=False,

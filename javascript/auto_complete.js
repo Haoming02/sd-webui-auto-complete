@@ -148,11 +148,8 @@
     /** @param {string} data */
     function setup(data) {
         trie = new Trie();
-
-        console.time('[AutoComplete] Init')
-        for (const tag of data.split("\n"))
-            trie.insert(tag.replaceAll("_", " ").replaceAll("(", "\\(").replaceAll(")", "\\)").trim());
-        console.timeEnd('[AutoComplete] Init')
+        for (const tag of data.split(","))
+            trie.insert(tag);
 
         suggestions = document.createElement("ul");
         suggestions.id = "suggestions";
@@ -181,13 +178,13 @@
         });
     }
 
-    const delay = 100;
+    const delay = 10;
     const maxRetry = 10;
-    let retry = 0;
+    let retry = 1;
 
     async function tryLoadCSV() {
         if (retry > maxRetry) {
-            alert('[AutoComplete] Failed to Locate "tags.csv"');
+            alert('[AutoComplete] Failed to Locate "tags.txt"');
             return;
         }
 
@@ -200,7 +197,7 @@
             if (!response.ok) {
                 console.error(response);
                 retry++;
-                setTimeout(async () => await tryLoadCSV(), delay);
+                setTimeout(async () => await tryLoadCSV(), delay * retry);
                 return;
             }
 
@@ -208,12 +205,14 @@
         } catch (error) {
             console.error(error.message);
             retry++;
-            setTimeout(async () => await tryLoadCSV(), delay);
+            setTimeout(async () => await tryLoadCSV(), delay * retry);
             return;
         }
 
-        setup(data.trim());
+        console.time('[AutoComplete] Init')
+        setup(data);
+        console.timeEnd('[AutoComplete] Init')
     }
 
-    onUiLoaded(() => { setTimeout(async () => await tryLoadCSV(), delay); });
+    onUiLoaded(() => { setTimeout(async () => await tryLoadCSV(), delay * retry); });
 })();
