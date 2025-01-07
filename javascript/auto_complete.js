@@ -6,10 +6,11 @@
     /** @type {HTMLUListElement} */
     let suggestions;
 
+    function clear() { while (suggestions.firstChild) suggestions.firstChild.remove(); }
     function hide() { suggestions.style.display = "none"; }
     function show() {
-        suggestions.firstChild.scrollIntoView({ behavior: 'instant', block: 'center' });
         suggestions.style.display = "block";
+        suggestions.firstChild.scrollIntoView({ behavior: 'instant', block: 'center' });
     }
 
     /** @param {KeyboardEvent} event */
@@ -69,8 +70,9 @@
 
             const cursorPosition = input.selectionStart;
             const prevComma = currentValue.slice(0, cursorPosition).lastIndexOf(",");
+            const prevNewline = currentValue.slice(0, cursorPosition).lastIndexOf("\n");
 
-            const start = prevComma + 1;
+            const start = Math.max(prevComma, prevNewline) + 1;
             const end = cursorPosition;
             const currentWord = currentValue.slice(start, end).trim();
 
@@ -80,9 +82,7 @@
                 return;
             }
 
-            while (suggestions.firstChild)
-                suggestions.firstChild.remove();
-
+            clear();
             for (const tag of matches) {
                 const li = document.createElement("li");
                 suggestions.appendChild(li);
@@ -92,11 +92,16 @@
                     if (start === 0) {
                         input.value = `${tag}, ${currentValue.slice(end)}`;
                         input.setSelectionRange(tag.length + 1, tag.length + 1);
-                    } else {
+                    } else if (currentValue.charAt(start - 1) === ",") {
                         input.value = `${currentValue.slice(0, start)} ${tag}, ${currentValue.slice(end)}`;
                         input.setSelectionRange(start + tag.length + 2, start + tag.length + 2);
+                    } else {
+                        input.value = `${currentValue.slice(0, start)}${tag}, ${currentValue.slice(end)}`;
+                        input.setSelectionRange(start + tag.length + 1, start + tag.length + 1);
                     }
+
                     updateInput(input);
+                    clear();
                     hide();
                 });
             }
@@ -109,11 +114,35 @@
         hide();
     }
 
+    /** @param {string} text @returns {number} */
+    function getTextWidth(text) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        context.font = "bold 12px sans-serif";
+        return context.measureText(text).width;
+    }
+
     /** @param {HTMLTextAreaElement} input */
     function positionSuggestions(input) {
+        const currentValue = input.value;
+        const caret = input.selectionStart;
+        const prevNewline = currentValue.slice(0, caret).lastIndexOf("\n");
         const rect = input.getBoundingClientRect();
-        suggestions.style.top = `${rect.bottom + window.scrollY}px`;
-        suggestions.style.left = `${rect.left + window.scrollX}px`;
+
+        const line = currentValue.slice(Math.max(0, prevNewline), caret);
+        const lineCount = currentValue.slice(0, caret).split("\n").length + 1;
+
+        const w = rect.left + window.scrollX + getTextWidth(line);
+        const t = rect.top + window.scrollY + lineCount * 16;
+
+        if (w < rect.width) {
+            suggestions.style.left = `${w}px`;
+            suggestions.style.top = `${t}px`;
+        }
+        else {
+            suggestions.style.left = `${rect.left + window.scrollX}px`;
+            suggestions.style.top = `${rect.bottom - 8}px`;
+        }
     }
 
     /** @param {string} data */
@@ -153,7 +182,7 @@
 
     async function tryLoadCSV() {
         if (retry > maxRetry) {
-            alert('[AutoComplete] Failed to Locate "selected_tags.csv"');
+            alert('[AutoComplete] Failed to Locate "tags.csv"');
             return;
         }
 
