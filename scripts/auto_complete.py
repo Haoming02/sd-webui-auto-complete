@@ -34,10 +34,10 @@ def add_ui_settings():
     opts.add_option(
         "ac_limit",
         OptionInfo(
-            64,
+            16,
             "Maximum number of suggestion entries to show",
             Slider,
-            {"minimum": 1, "maximum": 1024, "step": 1},
+            {"minimum": 1, "maximum": 256, "step": 1},
             section=("system", "System"),
         ),
     )

@@ -148,8 +148,9 @@
     /** @param {string} data */
     function setup(data) {
         trie = new Trie();
-        for (const tag of data.split(","))
-            trie.insert(tag);
+        data.split(",").forEach((tag, order) => {
+            trie.insert(tag, order);
+        });
 
         suggestions = document.createElement("ul");
         suggestions.id = "suggestions";
