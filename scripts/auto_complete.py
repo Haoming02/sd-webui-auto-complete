@@ -42,5 +42,16 @@ def add_ui_settings():
         ),
     )
 
+    opts.add_option(
+        "ac_delay",
+        OptionInfo(
+            0,
+            "Delay between typing and showing suggestions",
+            Slider,
+            {"minimum": 0, "maximum": 400, "step": 10},
+            section=("system", "System"),
+        ).info("0 = Disabled"),
+    )
+
 
 on_ui_settings(add_ui_settings)

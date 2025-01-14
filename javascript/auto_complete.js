@@ -13,6 +13,52 @@
         suggestions.firstChild.scrollIntoView({ behavior: 'instant', block: 'center' });
     }
 
+    /** @param {HTMLTextAreaElement} input */
+    function main(input) {
+        const currentValue = input.value;
+
+        const cursorPosition = input.selectionStart;
+        const prevComma = currentValue.slice(0, cursorPosition).lastIndexOf(",");
+        const prevNewline = currentValue.slice(0, cursorPosition).lastIndexOf("\n");
+
+        const start = Math.max(prevComma, prevNewline) + 1;
+        const end = cursorPosition;
+        const currentWord = currentValue.slice(start, end).trim();
+
+        const matches = trie.getMatches(currentWord);
+        if (matches.length === 0) {
+            hide();
+            return;
+        }
+
+        clear();
+        for (const tag of matches) {
+            const li = document.createElement("li");
+            suggestions.appendChild(li);
+
+            li.textContent = tag;
+            li.addEventListener("click", () => {
+                if (start === 0) {
+                    input.value = `${tag}, ${currentValue.slice(end)}`;
+                    input.setSelectionRange(tag.length + 1, tag.length + 1);
+                } else if (currentValue.charAt(start - 1) === ",") {
+                    input.value = `${currentValue.slice(0, start)} ${tag}, ${currentValue.slice(end)}`;
+                    input.setSelectionRange(start + tag.length + 2, start + tag.length + 2);
+                } else {
+                    input.value = `${currentValue.slice(0, start)}${tag}, ${currentValue.slice(end)}`;
+                    input.setSelectionRange(start + tag.length + 1, start + tag.length + 1);
+                }
+
+                updateInput(input);
+                clear();
+                hide();
+            });
+        }
+
+        positionSuggestions(input);
+        show();
+    }
+
     /** @param {KeyboardEvent} event */
     function intelliSense(event) {
         if (event.code === "Enter") {
@@ -63,51 +109,7 @@
         }
         else if (event.ctrlKey && event.code === "Space") {
             event.preventDefault();
-
-            /** @type {HTMLTextAreaElement} */
-            const input = event.target;
-            const currentValue = input.value;
-
-            const cursorPosition = input.selectionStart;
-            const prevComma = currentValue.slice(0, cursorPosition).lastIndexOf(",");
-            const prevNewline = currentValue.slice(0, cursorPosition).lastIndexOf("\n");
-
-            const start = Math.max(prevComma, prevNewline) + 1;
-            const end = cursorPosition;
-            const currentWord = currentValue.slice(start, end).trim();
-
-            const matches = trie.getMatches(currentWord);
-            if (matches.length === 0) {
-                hide();
-                return;
-            }
-
-            clear();
-            for (const tag of matches) {
-                const li = document.createElement("li");
-                suggestions.appendChild(li);
-
-                li.textContent = tag;
-                li.addEventListener("click", () => {
-                    if (start === 0) {
-                        input.value = `${tag}, ${currentValue.slice(end)}`;
-                        input.setSelectionRange(tag.length + 1, tag.length + 1);
-                    } else if (currentValue.charAt(start - 1) === ",") {
-                        input.value = `${currentValue.slice(0, start)} ${tag}, ${currentValue.slice(end)}`;
-                        input.setSelectionRange(start + tag.length + 2, start + tag.length + 2);
-                    } else {
-                        input.value = `${currentValue.slice(0, start)}${tag}, ${currentValue.slice(end)}`;
-                        input.setSelectionRange(start + tag.length + 1, start + tag.length + 1);
-                    }
-
-                    updateInput(input);
-                    clear();
-                    hide();
-                });
-            }
-
-            positionSuggestions(input);
-            show();
+            main(event.target);
             return;
         }
 
@@ -145,6 +147,21 @@
         }
     }
 
+    const acOnEditTimers = {};
+
+    /** @param {HTMLTextAreaElement} field @param {string} id @param {number} autoDelay */
+    function acOnEdit(field, id, autoDelay) {
+        field.addEventListener("keydown", (e) => {
+            if (e.ctrlKey || e.shiftKey || e.altKey)
+                return;
+            if (e.key.match(/^[a-zA-Z]$/)) {
+                const existingTimer = acOnEditTimers[id];
+                if (existingTimer) clearTimeout(existingTimer);
+                acOnEditTimers[id] = setTimeout(() => { main(field); }, autoDelay);
+            }
+        });
+    }
+
     /** @param {string} data */
     function setup(data) {
         trie = new Trie();
@@ -156,6 +173,7 @@
         suggestions.id = "suggestions";
 
         document.getElementById("quicksettings").appendChild(suggestions);
+        const autoDelay = document.getElementById("setting_ac_delay").querySelector("input").value;
 
         /** Expandable List of IDs in 1 place */
         const IDs = [
@@ -169,8 +187,11 @@
 
         for (const id of IDs) {
             const textArea = document.getElementById(id)?.querySelector('textarea');
-            if (textArea != null)
+            if (textArea != null) {
                 textArea.addEventListener("keydown", intelliSense);
+                if (autoDelay > 0)
+                    acOnEdit(textArea, id, autoDelay);
+            }
         }
 
         document.addEventListener("mousedown", (event) => {
