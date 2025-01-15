@@ -7,11 +7,13 @@
     let suggestions;
 
     function clear() { while (suggestions.firstChild) suggestions.firstChild.remove(); }
-    function hide() { suggestions.style.display = "none"; }
+    function hide() { clear(); suggestions.style.display = "none"; }
     function show() {
         suggestions.style.display = "block";
         suggestions.firstChild.scrollIntoView({ behavior: 'instant', block: 'center' });
     }
+
+    const opening = new Set(["(", "[", "{", " "]);
 
     /** @param {HTMLTextAreaElement} input */
     function main(input) {
@@ -22,14 +24,14 @@
 
         const end = cursorPosition;
         let start = Math.max(
-            prev.lastIndexOf(","),
             prev.lastIndexOf("\n"),
+            prev.lastIndexOf(","),
             prev.lastIndexOf(":"),
             prev.lastIndexOf("|")
         ) + 1;
 
         let currentWord = currentValue.slice(start, end);
-        while (["(", "[", "{", " "].includes(currentWord.charAt(0))) {
+        while (opening.has(currentWord.charAt(0))) {
             currentWord = currentWord.slice(1);
             start++;
         }
@@ -59,7 +61,6 @@
                 }
 
                 updateInput(input);
-                clear();
                 hide();
             });
         }
@@ -69,7 +70,7 @@
     }
 
     /** @param {KeyboardEvent} event */
-    function intelliSense(event) {
+    function intelliSense(event, autoDelay) {
         if (event.code === "Enter") {
             if (getComputedStyle(suggestions).display == "none")
                 return;
@@ -122,7 +123,8 @@
             return;
         }
 
-        hide();
+        if (autoDelay <= 0)
+            hide();
     }
 
     /** @param {string} text @returns {number} */
@@ -161,13 +163,18 @@
     /** @param {HTMLTextAreaElement} field @param {string} id @param {number} autoDelay */
     function acOnEdit(field, id, autoDelay) {
         field.addEventListener("keydown", (e) => {
-            if (e.ctrlKey || e.shiftKey || e.altKey)
+            if (e.ctrlKey || e.shiftKey || e.altKey) {
+                hide();
                 return;
+            }
             if (e.key === "Backspace" || e.key.match(/^[a-zA-Z\-\ ]$/)) {
                 const existingTimer = acOnEditTimers[id];
                 if (existingTimer) clearTimeout(existingTimer);
                 acOnEditTimers[id] = setTimeout(() => { main(field); }, autoDelay);
+                return;
             }
+
+            hide();
         });
     }
 
@@ -197,7 +204,7 @@
         for (const id of IDs) {
             const textArea = document.getElementById(id)?.querySelector('textarea');
             if (textArea != null) {
-                textArea.addEventListener("keydown", intelliSense);
+                textArea.addEventListener("keydown", (e) => { intelliSense(e, autoDelay); });
                 if (autoDelay > 0)
                     acOnEdit(textArea, id, autoDelay);
             }
