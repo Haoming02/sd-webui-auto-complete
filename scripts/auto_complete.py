@@ -50,7 +50,9 @@ def add_ui_settings():
             Slider,
             {"minimum": 0, "maximum": 400, "step": 10},
             section=("system", "System"),
-        ).info("0 = Disabled"),
+        )
+        .info("0 = Disabled")
+        .needs_reload_ui(),
     )
 
 

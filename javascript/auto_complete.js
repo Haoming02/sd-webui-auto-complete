@@ -69,7 +69,10 @@
         show();
     }
 
-    /** @param {KeyboardEvent} event */
+    /** @type {Object<string, Function>} */
+    const acOnEditTimers = {};
+
+    /** @param {KeyboardEvent} event @param {number} autoDelay */
     function intelliSense(event, autoDelay) {
         if (event.code === "Enter") {
             if (getComputedStyle(suggestions).display == "none")
@@ -79,7 +82,6 @@
             suggestions.children[Math.max(0, currentSelected)].click();
 
             event.preventDefault();
-            return;
         }
         else if (event.code === "ArrowUp") {
             if (getComputedStyle(suggestions).display == "none")
@@ -97,7 +99,6 @@
             });
 
             event.preventDefault();
-            return;
         }
         else if (event.code === "ArrowDown") {
             if (getComputedStyle(suggestions).display == "none")
@@ -115,16 +116,26 @@
             });
 
             event.preventDefault();
-            return;
         }
         else if (event.ctrlKey && event.code === "Space") {
-            event.preventDefault();
             main(event.target);
-            return;
+            event.preventDefault();
         }
+        else {
+            if ((autoDelay <= 0) || (event.ctrlKey || event.shiftKey || event.altKey)) {
+                hide();
+                return;
+            }
 
-        if (autoDelay <= 0)
+            if (event.key === "Backspace" || event.key.match(/^[a-zA-Z\-\ ]$/)) {
+                const existingTimer = acOnEditTimers[event.target.id];
+                if (existingTimer) clearTimeout(existingTimer);
+                acOnEditTimers[event.target.id] = setTimeout(() => { main(event.target); }, autoDelay);
+                return;
+            }
+
             hide();
+        }
     }
 
     /** @param {string} text @returns {number} */
@@ -158,26 +169,6 @@
         }
     }
 
-    const acOnEditTimers = {};
-
-    /** @param {HTMLTextAreaElement} field @param {string} id @param {number} autoDelay */
-    function acOnEdit(field, id, autoDelay) {
-        field.addEventListener("keydown", (e) => {
-            if (e.ctrlKey || e.shiftKey || e.altKey) {
-                hide();
-                return;
-            }
-            if (e.key === "Backspace" || e.key.match(/^[a-zA-Z\-\ ]$/)) {
-                const existingTimer = acOnEditTimers[id];
-                if (existingTimer) clearTimeout(existingTimer);
-                acOnEditTimers[id] = setTimeout(() => { main(field); }, autoDelay);
-                return;
-            }
-
-            hide();
-        });
-    }
-
     /** @param {string} data */
     function setup(data) {
         trie = new Trie();
@@ -203,11 +194,8 @@
 
         for (const id of IDs) {
             const textArea = document.getElementById(id)?.querySelector('textarea');
-            if (textArea != null) {
+            if (textArea != null)
                 textArea.addEventListener("keydown", (e) => { intelliSense(e, autoDelay); });
-                if (autoDelay > 0)
-                    acOnEdit(textArea, id, autoDelay);
-            }
         }
 
         document.addEventListener("mousedown", (event) => {
