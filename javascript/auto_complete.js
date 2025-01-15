@@ -18,12 +18,21 @@
         const currentValue = input.value;
 
         const cursorPosition = input.selectionStart;
-        const prevComma = currentValue.slice(0, cursorPosition).lastIndexOf(",");
-        const prevNewline = currentValue.slice(0, cursorPosition).lastIndexOf("\n");
+        const prev = currentValue.slice(0, cursorPosition);
 
-        const start = Math.max(prevComma, prevNewline) + 1;
         const end = cursorPosition;
-        const currentWord = currentValue.slice(start, end).trim();
+        let start = Math.max(
+            prev.lastIndexOf(","),
+            prev.lastIndexOf("\n"),
+            prev.lastIndexOf(":"),
+            prev.lastIndexOf("|")
+        ) + 1;
+
+        let currentWord = currentValue.slice(start, end);
+        while (["(", "[", "{", " "].includes(currentWord.charAt(0))) {
+            currentWord = currentWord.slice(1);
+            start++;
+        }
 
         const matches = trie.getMatches(currentWord);
         if (matches.length === 0) {
@@ -154,7 +163,7 @@
         field.addEventListener("keydown", (e) => {
             if (e.ctrlKey || e.shiftKey || e.altKey)
                 return;
-            if (e.key.match(/^[a-zA-Z]$/)) {
+            if (e.key === "Backspace" || e.key.match(/^[a-zA-Z\-\ ]$/)) {
                 const existingTimer = acOnEditTimers[id];
                 if (existingTimer) clearTimeout(existingTimer);
                 acOnEditTimers[id] = setTimeout(() => { main(field); }, autoDelay);
