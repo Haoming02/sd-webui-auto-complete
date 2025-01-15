@@ -18,7 +18,7 @@ class ACServer(scripts.Script):
         if not is_img2img:
             return None
 
-        file = path.join(path.dirname(path.dirname(__file__)), "tags.txt")
+        file = path.join(path.dirname(path.dirname(__file__)), "tags.csv")
         link = Textbox(
             value=file,
             visible=False,

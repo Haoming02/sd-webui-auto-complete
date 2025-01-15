@@ -165,8 +165,8 @@
     /** @param {string} data */
     function setup(data) {
         trie = new Trie();
-        data.split(",").forEach((tag, order) => {
-            trie.insert(tag, order);
+        data.trim().split("\n").forEach((tag, order) => {
+            trie.insert(tag.trim(), order);
         });
 
         suggestions = document.createElement("ul");
@@ -206,7 +206,8 @@
 
     async function tryLoadCSV() {
         if (retry > maxRetry) {
-            alert('[AutoComplete] Failed to Locate "tags.txt"');
+            alert('[AutoComplete] Failed to Locate "tags.csv"');
+            console.timeEnd('[AutoComplete] Fetch')
             return;
         }
 
@@ -230,11 +231,16 @@
             setTimeout(async () => await tryLoadCSV(), delay * retry);
             return;
         }
+        console.timeEnd('[AutoComplete] Fetch')
 
         console.time('[AutoComplete] Init')
         setup(data);
         console.timeEnd('[AutoComplete] Init')
     }
 
-    onUiLoaded(() => { setTimeout(async () => await tryLoadCSV(), delay * retry); });
+    onUiLoaded(() => {
+        setTimeout(async () => {
+            console.time('[AutoComplete] Fetch'); await tryLoadCSV();
+        }, delay);
+    });
 })();
