@@ -15,6 +15,7 @@ class Trie {
 
     /** @param {string} word @param {number} order */
     insert(word, order) {
+        if (!word) return;
         let node = this.root;
         for (const char of word) {
             if (node.children[char] == undefined)

@@ -6,8 +6,14 @@
     /** @type {HTMLUListElement} */
     let suggestions;
 
-    function clear() { while (suggestions.firstChild) suggestions.firstChild.remove(); }
-    function hide() { clear(); suggestions.style.display = "none"; }
+    function clear() {
+        while (suggestions.firstChild)
+            suggestions.firstChild.remove();
+    }
+    function hide() {
+        suggestions.style.display = "none";
+        clear();
+    }
     function show() {
         suggestions.style.display = "block";
         suggestions.firstChild.scrollIntoView({ behavior: 'instant', block: 'center' });
@@ -204,47 +210,18 @@
         });
     }
 
-    const delay = 10;
-    const maxRetry = 10;
-    let retry = 1;
-
-    async function tryLoadCSV() {
-        if (retry > maxRetry) {
-            alert('[AutoComplete] Failed to Locate "tags.csv"');
-            console.timeEnd('[AutoComplete] Fetch')
-            return;
-        }
-
-        const csv = document.getElementById("ac_url").querySelector("textarea").value;
-        const url = `${window.location.href}file=${csv}`;
-        let data = undefined;
-
+    function loadCSV() {
         try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                console.error(response);
-                retry++;
-                setTimeout(async () => await tryLoadCSV(), delay * retry);
-                return;
-            }
-
-            data = await response.text();
-        } catch (error) {
-            console.error(error.message);
-            retry++;
-            setTimeout(async () => await tryLoadCSV(), delay * retry);
-            return;
+            console.time('[AutoComplete] Init')
+            const textbox = document.getElementById("ac_data");
+            const data = textbox.querySelector("textarea").value;
+            setup(data);
+            textbox.remove();
+            console.timeEnd('[AutoComplete] Init')
+        } catch {
+            alert('[AutoComplete] Failed to Load "tags.csv"');
         }
-        console.timeEnd('[AutoComplete] Fetch')
-
-        console.time('[AutoComplete] Init')
-        setup(data);
-        console.timeEnd('[AutoComplete] Init')
     }
 
-    onUiLoaded(() => {
-        setTimeout(async () => {
-            console.time('[AutoComplete] Fetch'); await tryLoadCSV();
-        }, delay);
-    });
+    onUiLoaded(() => { loadCSV(); });
 })();

@@ -18,16 +18,21 @@ class ACServer(scripts.Script):
         if not is_img2img:
             return None
 
-        file = path.join(path.dirname(path.dirname(__file__)), "tags.csv")
+        csv = path.join(path.dirname(path.dirname(__file__)), "tags.csv")
+        with open(csv, "r", encoding="utf-8") as file:
+            tags = file.read()
+
         link = Textbox(
-            value=file,
+            value=tags,
             visible=False,
             show_label=False,
             interactive=False,
-            elem_id="ac_url",
+            elem_id="ac_data",
         )
 
         link.do_not_save_to_config = True
+        del csv
+        del tags
 
 
 def add_ui_settings():
