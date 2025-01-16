@@ -2,8 +2,30 @@ from modules.script_callbacks import on_ui_settings
 from modules.shared import opts, OptionInfo
 from modules import scripts
 
-from gradio import Textbox, Slider
+from gradio import Textbox, Slider, Radio
 from os import path
+
+
+def extra_networks() -> str:
+    from modules.shared import cmd_opts
+    from pathlib import Path
+
+    EXTENSIONS = (".pt", ".pth", ".ckpt", ".safetensors", ".sft")
+    items: list[str] = []
+
+    embeddings = Path(cmd_opts.embeddings_dir)
+    for ext in EXTENSIONS:
+        files = embeddings.glob(f"**/*{ext}")
+        for file in files:
+            items.append(file.stem)
+
+    loras = Path(cmd_opts.lora_dir)
+    for ext in EXTENSIONS:
+        files = loras.glob(f"**/*{ext}")
+        for file in files:
+            items.append(f"<l>{file.stem}")
+
+    return "\n".join(items)
 
 
 class ACServer(scripts.Script):
@@ -22,6 +44,13 @@ class ACServer(scripts.Script):
         with open(csv, "r", encoding="utf-8") as file:
             tags = file.read()
 
+        if (extras := getattr(opts, "ac_extras", "Off")) != "Off":
+            networks = extra_networks()
+            if extras == "Prepend":
+                tags = f"{networks}\n{tags}"
+            else:
+                tags = f"{tags}\n{networks}"
+
         link = Textbox(
             value=tags,
             visible=False,
@@ -36,6 +65,8 @@ class ACServer(scripts.Script):
 
 
 def add_ui_settings():
+    section = ("ac", "Auto Complete")
+
     opts.add_option(
         "ac_limit",
         OptionInfo(
@@ -43,7 +74,8 @@ def add_ui_settings():
             "Maximum number of suggestion entries to show",
             Slider,
             {"minimum": 1, "maximum": 256, "step": 1},
-            section=("system", "System"),
+            section=section,
+            category_id="system",
         ),
     )
 
@@ -54,10 +86,25 @@ def add_ui_settings():
             "Delay between typing and showing suggestions",
             Slider,
             {"minimum": 0, "maximum": 400, "step": 10},
-            section=("system", "System"),
+            section=section,
+            category_id="system",
         )
         .info("0 = Disabled")
         .needs_reload_ui(),
+    )
+
+    opts.add_option(
+        "ac_extras",
+        OptionInfo(
+            "Off",
+            "Include ExtraNetworks",
+            Radio,
+            {"choices": ("Off", "Prepend", "Append")},
+            section=section,
+            category_id="system",
+        )
+        .info("Embeddings / LoRA")
+        .info("does <b>not</b> hot reload new models"),
     )
 
 

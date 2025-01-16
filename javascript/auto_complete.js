@@ -53,7 +53,11 @@
             const li = document.createElement("li");
             suggestions.appendChild(li);
 
-            li.textContent = tag;
+            if (tag.includes("lora:"))
+                li.textContent = `lora:${tag.split(":")[1]}`;
+            else
+                li.textContent = tag;
+
             li.addEventListener("click", () => {
                 if (start === 0) {
                     input.value = `${tag}, ${currentValue.slice(end)}`;
@@ -177,16 +181,19 @@
 
     /** @param {string} data */
     function setup(data) {
+        const autoDelay = parseInt(document.getElementById("setting_ac_delay").querySelector("input").value);
+        const loraWeight = document.getElementById("setting_extra_networks_default_multiplier")
+            .querySelector("input").value.toString();
+
         trie = new Trie();
         data.trim().split("\n").forEach((tag, order) => {
-            trie.insert(tag.trim(), order);
+            trie.insert(tag.trim(), order, loraWeight);
         });
 
         suggestions = document.createElement("ul");
         suggestions.id = "suggestions";
 
         document.getElementById("quicksettings").appendChild(suggestions);
-        const autoDelay = document.getElementById("setting_ac_delay").querySelector("input").value;
 
         /** Expandable List of IDs in 1 place */
         const IDs = [

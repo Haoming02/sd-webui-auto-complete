@@ -5,6 +5,8 @@ class TNode {
         this.children = {};
         /** @type { number? } */
         this.weight = null;
+        /** @type { string? } */
+        this.original = null;
     }
 }
 
@@ -13,16 +15,29 @@ class Trie {
 
     constructor() { this.root = new TNode(); }
 
-    /** @param {string} word @param {number} order */
-    insert(word, order) {
+    /** @param {string} word @param {number} order @param {string} weight */
+    insert(word, order, weight) {
         if (!word) return;
+
+        let lora = false;
+        if (word.includes("<l>")) {
+            word = word.substring(3);
+            lora = true;
+        }
+
         let node = this.root;
-        for (const char of word) {
+        const lowered = word.toLowerCase();
+        for (const char of lowered) {
             if (node.children[char] == undefined)
                 node.children[char] = new TNode();
             node = node.children[char];
         }
         node.weight = order;
+
+        if (lora)
+            node.original = `<lora:${word}:${weight}>`;
+        else if (lowered !== word)
+            node.original = word;
     }
 
     /** @param {string} filter @returns {TNode} */
@@ -45,7 +60,10 @@ class Trie {
 
         const dfs = (currentNode, currentPrefix) => {
             if (currentNode.weight != null)
-                results.push({ word: currentPrefix, weight: currentNode.weight });
+                results.push({
+                    word: currentNode.original || currentPrefix,
+                    weight: currentNode.weight
+                });
             for (const char in currentNode.children)
                 dfs(currentNode.children[char], currentPrefix + char);
         };
