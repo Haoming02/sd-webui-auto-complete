@@ -50,6 +50,14 @@ class ACServer(scripts.Script):
                 tags = f"{networks}\n{tags}"
             else:
                 tags = f"{tags}\n{networks}"
+            del networks
+
+        custom = path.join(path.dirname(path.dirname(__file__)), "custom.csv")
+        if path.isfile(custom):
+            with open(custom, "r", encoding="utf-8") as file:
+                custom_tags = file.read()
+            tags = f"{custom_tags}\n{tags}"
+            del custom_tags
 
         link = Textbox(
             value=tags,
