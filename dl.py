@@ -1,19 +1,7 @@
-class Configs:
-    """Wiki: https://danbooru.donmai.us/wiki_pages/api:tags"""
+# https://danbooru.donmai.us/wiki_pages/api:tags #
 
-    min_post_count = 64
-
-    dl_general = True
-    dl_artist = None  # disabled
-    dl_copyright = True
-    dl_character = True
-    dl_meta = False
-
-    keep_underscore = False
-    escape_brackets = True
-
-
-API = "https://danbooru.donmai.us/tags.json?limit=1000&search[hide_empty]=yes&search[is_deprecated]=no&search[order]=count"
+import time
+import requests
 
 GENERAL = 0
 COPYRIGHT = 3
@@ -21,11 +9,13 @@ CHARACTER = 4
 META = 5
 
 
-import requests
-import time
+class Configs:
+    escape_brackets: bool = True
+    keep_underscore: bool = False
+    min_post_count: int = 128
 
 
-def preprocess(tag: str) -> str:
+def _preprocess(tag: str) -> str:
     if not Configs.keep_underscore:
         tag = tag.replace("_", " ")
     if Configs.escape_brackets:
@@ -33,50 +23,60 @@ def preprocess(tag: str) -> str:
     return f"{tag}\n"
 
 
-finished = False
-with open("tags.csv", mode="w+", encoding="utf-8") as file:
-    try:
-        for page in range(1, 100):
-            print(f"Page {page}...", end="\r")
-            url = f"{API}&page={page}"
+API = "https://danbooru.donmai.us/tags.json"
+params = {
+    "limit": 2000,
+    "search[hide_empty]": True,
+    "search[is_deprecated]": False,
+    "search[order]": "count",
+}
 
-            response = requests.get(url)
-            if response.status_code != 200:
-                raise ConnectionError(response.status_code)
+file = open("tags.csv", mode="w+", encoding="utf-8")
+queue: list[float] = []
+page: int = 0
 
-            data = response.json()
-            if not data:
+try:
+    print("Downloading...")
+    isDone = False
+
+    while not isDone:
+
+        if len(queue) == 10:
+            t = queue.pop(0)
+            elapsed = time.monotonic() - t
+            if (delay := 1.0 - elapsed) > 0.0:
+                time.sleep(delay)
+
+        page += 1
+        params["page"] = page
+        print(f"Page {page}...", end="\r")
+
+        response = requests.get(API, params=params, timeout=2.5)
+        if response.status_code != 200:
+            raise ConnectionError(response.status_code)
+
+        data: list[dict[str, str | int]] = response.json()
+        if not data:
+            break
+
+        for tag in data:
+            if tag.get("post_count", -1) < Configs.min_post_count:
+                isDone = True
                 break
 
-            for item in data:
-                if item.get("post_count", -1) < Configs.min_post_count:
-                    finished = True
-                    break
+            category = tag.get("category", -1)
+            if category in (GENERAL, COPYRIGHT, CHARACTER, META):
+                file.write(_preprocess(tag["name"]))
 
-                category = item.get("category", -1)
+        queue.append(time.monotonic())
 
-                if category == GENERAL and Configs.dl_general:
-                    file.write(preprocess(item["name"]))
-                elif category == COPYRIGHT and Configs.dl_copyright:
-                    file.write(preprocess(item["name"]))
-                elif category == CHARACTER and Configs.dl_character:
-                    file.write(preprocess(item["name"]))
-                elif category == META and Configs.dl_meta:
-                    file.write(preprocess(item["name"]))
-
-            file.flush()
-
-            if finished:
-                break
-            else:
-                time.sleep(0.25)
-
-    except KeyboardInterrupt:
-        print("Interrupted...")
-    except EOFError:
-        print("Interrupted...")
-    except Exception:
-        from traceback import format_exc
-        print("\n", format_exc(), "\n")
-
-print("Finished Downloading Tags...")
+except (TimeoutError, ConnectionError):
+    print("Failed to download page...")
+except (KeyboardInterrupt, EOFError):
+    print("Interrupted...")
+except Exception as e:
+    print(e)
+finally:
+    file.flush()
+    file.close()
+    print("Download Finished!")
