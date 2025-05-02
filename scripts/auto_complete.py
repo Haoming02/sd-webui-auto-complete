@@ -3,7 +3,7 @@ from modules.shared import opts, OptionInfo
 from modules import scripts
 
 from gradio import Textbox, Slider, Radio
-from os import path
+import os.path
 
 
 def extra_networks() -> str:
@@ -40,7 +40,9 @@ class ACServer(scripts.Script):
         if not is_img2img:
             return None
 
-        csv = path.join(path.dirname(path.dirname(__file__)), "tags.csv")
+        _dir = os.path.normpath(os.path.dirname(os.path.dirname(__file__)))
+
+        csv = os.path.join(_dir, "tags.csv")
         with open(csv, "r", encoding="utf-8") as file:
             tags = file.read()
 
@@ -52,15 +54,15 @@ class ACServer(scripts.Script):
                 tags = f"{tags}\n{networks}"
             del networks
 
-        custom = path.join(path.dirname(path.dirname(__file__)), "custom.csv")
-        if path.isfile(custom):
+        custom = os.path.join(_dir, "custom.csv")
+        if os.path.isfile(custom):
             with open(custom, "r", encoding="utf-8") as file:
                 custom_tags = file.read()
             tags = f"{custom_tags}\n{tags}"
             del custom_tags
 
         link = Textbox(
-            value=tags,
+            value=tags.strip(),
             visible=False,
             show_label=False,
             interactive=False,
@@ -68,37 +70,32 @@ class ACServer(scripts.Script):
         )
 
         link.do_not_save_to_config = True
-        del csv
         del tags
 
 
 def add_ui_settings():
-    section = ("ac", "Auto Complete")
+    args = {"section": ("ac", "Auto Complete"), "category_id": "system"}
 
     opts.add_option(
         "ac_limit",
         OptionInfo(
-            16,
-            "Maximum number of suggestion entries to show",
+            4,
+            "Maximum number of suggestions to display",
             Slider,
-            {"minimum": 1, "maximum": 256, "step": 1},
-            section=section,
-            category_id="system",
+            {"minimum": 1, "maximum": 32, "step": 1},
+            **args,
         ),
     )
 
     opts.add_option(
         "ac_delay",
         OptionInfo(
-            0,
-            "Delay between typing and showing suggestions",
+            50,
+            "Delay (ms) between typing and displaying the suggestions",
             Slider,
-            {"minimum": 0, "maximum": 400, "step": 10},
-            section=section,
-            category_id="system",
-        )
-        .info("0 = Disabled")
-        .needs_reload_ui(),
+            {"minimum": 25, "maximum": 250, "step": 25},
+            **args,
+        ).needs_reload_ui(),
     )
 
     opts.add_option(
@@ -108,8 +105,7 @@ def add_ui_settings():
             "Include ExtraNetworks",
             Radio,
             {"choices": ("Off", "Prepend", "Append")},
-            section=section,
-            category_id="system",
+            **args,
         )
         .info("Embeddings / LoRA")
         .info("does <b>not</b> hot reload new models"),

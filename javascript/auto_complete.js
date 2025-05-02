@@ -132,7 +132,7 @@
             event.preventDefault();
         }
         else {
-            if ((autoDelay <= 0) || (event.ctrlKey || event.shiftKey || event.altKey)) {
+            if ((event.ctrlKey || event.shiftKey || event.altKey)) {
                 hide();
                 return;
             }
@@ -186,7 +186,7 @@
             .querySelector("input").value.toString();
 
         trie = new Trie();
-        data.trim().split("\n").forEach((tag, order) => {
+        data.split("\n").forEach((tag, order) => {
             trie.insert(tag.trim(), order, loraWeight);
         });
 
@@ -226,7 +226,7 @@
             textbox.remove();
             console.timeEnd('[AutoComplete] Init')
         } catch {
-            alert('[AutoComplete] Failed to Load "tags.csv"');
+            alert('[AutoComplete] Failed to Initialize...');
         }
     }
 

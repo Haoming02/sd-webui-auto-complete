@@ -4,7 +4,7 @@ class TNode {
         /** @type { Map<string, TNode> } */
         this.children = {};
         /** @type { number? } */
-        this.weight = null;
+        this.ordering = null;
         /** @type { string? } */
         this.original = null;
     }
@@ -19,28 +19,26 @@ class Trie {
     insert(word, order, weight) {
         if (!word) return;
 
-        let lora = false;
-        if (word.includes("<l>")) {
-            word = word.substring(3);
-            lora = true;
-        }
+        const isLora = word.startsWith("<l>");
+        const original = isLora ? word.substring(3) : word;
+        const lowered = original.toLowerCase();
 
         let node = this.root;
-        const lowered = word.toLowerCase();
         for (const char of lowered) {
             if (node.children[char] == undefined)
                 node.children[char] = new TNode();
             node = node.children[char];
         }
-        node.weight = order;
 
-        if (lora)
-            node.original = `<lora:${word}:${weight}>`;
-        else if (lowered !== word)
-            node.original = word;
+        node.ordering = order;
+
+        if (isLora)
+            node.original = `<lora:${original}:${weight}>`;
+        else
+            node.original = original;
     }
 
-    /** @param {string} filter @returns {TNode} */
+    /** @param {string} filter @returns {TNode?} */
     #searchPrefix(filter) {
         let node = this.root;
         for (const char of filter) {
@@ -58,21 +56,30 @@ class Trie {
         const node = this.#searchPrefix(filter);
         if (node == null) return results;
 
+        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
+
         const dfs = (currentNode, currentPrefix) => {
-            if (currentNode.weight != null)
+            if (results.length >= limit)
+                return;
+
+            if (currentNode.ordering != null) {
                 results.push({
-                    word: currentNode.original || currentPrefix,
-                    weight: currentNode.weight
+                    word: currentNode.original,
+                    weight: currentNode.ordering
                 });
+                if (results.length >= limit)
+                    return;
+            }
+
             for (const char in currentNode.children)
                 dfs(currentNode.children[char], currentPrefix + char);
         };
 
         dfs(node, filter);
-        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
 
-        results.sort((a, b) => a.weight - b.weight);
-        return results.slice(0, limit).map(result => result.word);
+        return results
+            .sort((a, b) => a.weight - b.weight)
+            .map(result => result.word);
     }
 
 }
