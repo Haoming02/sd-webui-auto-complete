@@ -1,14 +1,16 @@
-from modules.script_callbacks import on_ui_settings
-from modules.shared import opts, OptionInfo
-from modules import scripts
-
-from gradio import Textbox, Slider, Radio
 import os.path
+
+from gradio import Radio, Slider, Textbox
+
+from modules import scripts
+from modules.script_callbacks import on_ui_settings
+from modules.shared import OptionInfo, opts
 
 
 def extra_networks() -> str:
-    from modules.shared import cmd_opts
     from pathlib import Path
+
+    from modules.shared import cmd_opts
 
     EXTENSIONS = (".pt", ".pth", ".ckpt", ".safetensors", ".sft")
     items: list[str] = []
@@ -29,7 +31,6 @@ def extra_networks() -> str:
 
 
 class ACServer(scripts.Script):
-
     def title(self):
         return "Auto Complete"
 

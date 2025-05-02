@@ -1,5 +1,4 @@
 (function () {
-
     /** @type {Trie} */
     let trie;
 
@@ -7,8 +6,7 @@
     let suggestions;
 
     function clear() {
-        while (suggestions.firstChild)
-            suggestions.firstChild.remove();
+        while (suggestions.firstChild) suggestions.firstChild.remove();
     }
     function hide() {
         suggestions.style.display = "none";
@@ -16,7 +14,10 @@
     }
     function show() {
         suggestions.style.display = "block";
-        suggestions.firstChild.scrollIntoView({ behavior: 'instant', block: 'center' });
+        suggestions.firstChild.scrollIntoView({
+            behavior: "instant",
+            block: "center",
+        });
     }
 
     const opening = new Set(["(", "[", "{", " "]);
@@ -29,12 +30,13 @@
         const prev = currentValue.slice(0, cursorPosition);
 
         const end = cursorPosition;
-        let start = Math.max(
-            prev.lastIndexOf("\n"),
-            prev.lastIndexOf(","),
-            prev.lastIndexOf(":"),
-            prev.lastIndexOf("|")
-        ) + 1;
+        let start =
+            Math.max(
+                prev.lastIndexOf("\n"),
+                prev.lastIndexOf(","),
+                prev.lastIndexOf(":"),
+                prev.lastIndexOf("|"),
+            ) + 1;
 
         let currentWord = currentValue.slice(start, end);
         while (opening.has(currentWord.charAt(0))) {
@@ -53,10 +55,8 @@
             const li = document.createElement("li");
             suggestions.appendChild(li);
 
-            if (tag.includes("lora:"))
-                li.textContent = `lora:${tag.split(":")[1]}`;
-            else
-                li.textContent = tag;
+            if (tag.includes("lora:")) li.textContent = `lora:${tag.split(":")[1]}`;
+            else li.textContent = tag;
 
             li.addEventListener("click", () => {
                 if (start === 0) {
@@ -64,10 +64,16 @@
                     input.setSelectionRange(tag.length + 1, tag.length + 1);
                 } else if (currentValue.charAt(start - 1) === ",") {
                     input.value = `${currentValue.slice(0, start)} ${tag}, ${currentValue.slice(end)}`;
-                    input.setSelectionRange(start + tag.length + 2, start + tag.length + 2);
+                    input.setSelectionRange(
+                        start + tag.length + 2,
+                        start + tag.length + 2,
+                    );
                 } else {
                     input.value = `${currentValue.slice(0, start)}${tag}, ${currentValue.slice(end)}`;
-                    input.setSelectionRange(start + tag.length + 1, start + tag.length + 1);
+                    input.setSelectionRange(
+                        start + tag.length + 1,
+                        start + tag.length + 1,
+                    );
                 }
 
                 updateInput(input);
@@ -85,54 +91,57 @@
     /** @param {KeyboardEvent} event @param {number} autoDelay */
     function intelliSense(event, autoDelay) {
         if (event.code === "Enter") {
-            if (getComputedStyle(suggestions).display == "none")
-                return;
+            if (getComputedStyle(suggestions).display == "none") return;
 
-            let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
+            let currentSelected = Array.from(suggestions.children).indexOf(
+                suggestions.querySelector(".selected"),
+            );
             suggestions.children[Math.max(0, currentSelected)].click();
 
             event.preventDefault();
-        }
-        else if (event.code === "ArrowUp") {
-            if (getComputedStyle(suggestions).display == "none")
-                return;
+        } else if (event.code === "ArrowUp") {
+            if (getComputedStyle(suggestions).display == "none") return;
 
-            let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
+            let currentSelected = Array.from(suggestions.children).indexOf(
+                suggestions.querySelector(".selected"),
+            );
             if (currentSelected >= 0)
                 suggestions.children[currentSelected].classList.remove("selected");
 
-            currentSelected = (Math.max(0, currentSelected) - 1 + suggestions.children.length) % suggestions.children.length;
+            currentSelected =
+                (Math.max(0, currentSelected) - 1 + suggestions.children.length) %
+                suggestions.children.length;
             suggestions.children[currentSelected].classList.add("selected");
             suggestions.children[currentSelected].scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
+                behavior: "smooth",
+                block: "center",
             });
 
             event.preventDefault();
-        }
-        else if (event.code === "ArrowDown") {
-            if (getComputedStyle(suggestions).display == "none")
-                return;
+        } else if (event.code === "ArrowDown") {
+            if (getComputedStyle(suggestions).display == "none") return;
 
-            let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
+            let currentSelected = Array.from(suggestions.children).indexOf(
+                suggestions.querySelector(".selected"),
+            );
             if (currentSelected >= 0)
                 suggestions.children[currentSelected].classList.remove("selected");
 
-            currentSelected = (currentSelected + 1 + suggestions.children.length) % suggestions.children.length;
+            currentSelected =
+                (currentSelected + 1 + suggestions.children.length) %
+                suggestions.children.length;
             suggestions.children[currentSelected].classList.add("selected");
             suggestions.children[currentSelected].scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
+                behavior: "smooth",
+                block: "center",
             });
 
             event.preventDefault();
-        }
-        else if (event.ctrlKey && event.code === "Space") {
+        } else if (event.ctrlKey && event.code === "Space") {
             main(event.target);
             event.preventDefault();
-        }
-        else {
-            if ((event.ctrlKey || event.shiftKey || event.altKey)) {
+        } else {
+            if (event.ctrlKey || event.shiftKey || event.altKey) {
                 hide();
                 return;
             }
@@ -140,7 +149,9 @@
             if (event.key === "Backspace" || event.key.match(/^[a-zA-Z\-\ ]$/)) {
                 const existingTimer = acOnEditTimers[event.target.id];
                 if (existingTimer) clearTimeout(existingTimer);
-                acOnEditTimers[event.target.id] = setTimeout(() => { main(event.target); }, autoDelay);
+                acOnEditTimers[event.target.id] = setTimeout(() => {
+                    main(event.target);
+                }, autoDelay);
                 return;
             }
 
@@ -150,8 +161,8 @@
 
     /** @param {string} text @returns {number} */
     function getTextWidth(text) {
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
         context.font = "bold 12px sans-serif";
         return context.measureText(text).width;
     }
@@ -172,8 +183,7 @@
         if (w < rect.width) {
             suggestions.style.left = `${w}px`;
             suggestions.style.top = `${t}px`;
-        }
-        else {
+        } else {
             suggestions.style.left = `${rect.left + window.scrollX}px`;
             suggestions.style.top = `${rect.bottom - 8}px`;
         }
@@ -181,9 +191,13 @@
 
     /** @param {string} data */
     function setup(data) {
-        const autoDelay = parseInt(document.getElementById("setting_ac_delay").querySelector("input").value);
-        const loraWeight = document.getElementById("setting_extra_networks_default_multiplier")
-            .querySelector("input").value.toString();
+        const autoDelay = parseInt(
+            document.getElementById("setting_ac_delay").querySelector("input").value,
+        );
+        const loraWeight = document
+            .getElementById("setting_extra_networks_default_multiplier")
+            .querySelector("input")
+            .value.toString();
 
         trie = new Trie();
         data.split("\n").forEach((tag, order) => {
@@ -197,38 +211,41 @@
 
         /** Expandable List of IDs in 1 place */
         const IDs = [
-            'txt2img_prompt',
-            'txt2img_neg_prompt',
-            'img2img_prompt',
-            'img2img_neg_prompt',
-            'hires_prompt',
-            'hires_neg_prompt'
+            "txt2img_prompt",
+            "txt2img_neg_prompt",
+            "img2img_prompt",
+            "img2img_neg_prompt",
+            "hires_prompt",
+            "hires_neg_prompt",
         ];
 
         for (const id of IDs) {
-            const textArea = document.getElementById(id)?.querySelector('textarea');
+            const textArea = document.getElementById(id)?.querySelector("textarea");
             if (textArea != null)
-                textArea.addEventListener("keydown", (e) => { intelliSense(e, autoDelay); });
+                textArea.addEventListener("keydown", (e) => {
+                    intelliSense(e, autoDelay);
+                });
         }
 
         document.addEventListener("mousedown", (event) => {
-            if (!suggestions.contains(event.target))
-                hide();
+            if (!suggestions.contains(event.target)) hide();
         });
     }
 
     function loadCSV() {
         try {
-            console.time('[AutoComplete] Init')
+            console.time("[AutoComplete] Init");
             const textbox = document.getElementById("ac_data");
             const data = textbox.querySelector("textarea").value;
             setup(data);
             textbox.remove();
-            console.timeEnd('[AutoComplete] Init')
+            console.timeEnd("[AutoComplete] Init");
         } catch {
-            alert('[AutoComplete] Failed to Initialize...');
+            alert("[AutoComplete] Failed to Initialize...");
         }
     }
 
-    onUiLoaded(() => { loadCSV(); });
+    onUiLoaded(() => {
+        loadCSV();
+    });
 })();
