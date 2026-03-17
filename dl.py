@@ -1,6 +1,7 @@
-# https://danbooru.donmai.us/wiki_pages/api:tags #
+# https://danbooru.donmai.us/wiki_pages/api:tags
 
 import time
+
 import requests
 
 GENERAL = 0
@@ -12,7 +13,16 @@ META = 5
 class Configs:
     escape_brackets: bool = True
     keep_underscore: bool = False
-    min_post_count: int = 128
+    min_post_count: int = 150
+
+
+def _filter(tag: str) -> bool:
+    if tag.endswith("request"):
+        return False
+    if "cosplay" in tag:
+        return False
+
+    return True
 
 
 def _preprocess(tag: str) -> str:
@@ -63,6 +73,9 @@ try:
             if tag.get("post_count", -1) < Configs.min_post_count:
                 isDone = True
                 break
+
+            if not _filter(tag["name"]):
+                continue
 
             category = tag.get("category", -1)
             if category in (GENERAL, COPYRIGHT, CHARACTER, META):

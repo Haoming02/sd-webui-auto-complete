@@ -18,14 +18,12 @@ This is an Extension for the [Automatic1111 Webui](https://github.com/AUTOMATIC1
 
 - The suggestions are strictly triggered by **keyboard inputs** instead of **prompt editions**
     - Meaning, the suggestions will only ever show up when you are actually typing
-    - Extension that edits the prompts *(**eg.** [prompt-format](https://github.com/Haoming02/sd-webui-prompt-format))* will **not** trigger the suggestions
+    - Extension that edits the prompts (**e.g.** [prompt-format](https://github.com/Haoming02/sd-webui-prompt-format)) will **not** trigger the suggestions
 - Fast & Lightweight
-    - Initialization takes `50ms`
-    - Parsing suggestions takes `1ms`
 - Configure the behaviors in the `Auto Complete` section under the <ins>System</ins> category of the **Settings** tab
 
 ### Tags
 
-- A `tags.csv` is included by default, containing every tag that has at least `128` posts from [Danbooru](https://safebooru.donmai.us/)
+- A `tags.csv` is included by default, containing tags that have at least `150` posts from [Danbooru](https://safebooru.donmai.us/)
 - You can create a `custom.csv` to manually include more tags
 - A `dl.py` script is included, if you want to customize the default `tags.csv`

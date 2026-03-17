@@ -34,6 +34,7 @@
             Math.max(
                 prev.lastIndexOf("\n"),
                 prev.lastIndexOf(","),
+                prev.lastIndexOf("."),
                 prev.lastIndexOf(":"),
                 prev.lastIndexOf("|"),
             ) + 1;
@@ -64,16 +65,10 @@
                     input.setSelectionRange(tag.length + 1, tag.length + 1);
                 } else if (currentValue.charAt(start - 1) === ",") {
                     input.value = `${currentValue.slice(0, start)} ${tag}, ${currentValue.slice(end)}`;
-                    input.setSelectionRange(
-                        start + tag.length + 2,
-                        start + tag.length + 2,
-                    );
+                    input.setSelectionRange(start + tag.length + 2, start + tag.length + 2);
                 } else {
                     input.value = `${currentValue.slice(0, start)}${tag}, ${currentValue.slice(end)}`;
-                    input.setSelectionRange(
-                        start + tag.length + 1,
-                        start + tag.length + 1,
-                    );
+                    input.setSelectionRange(start + tag.length + 1, start + tag.length + 1);
                 }
 
                 updateInput(input);
@@ -93,24 +88,17 @@
         if (event.code === "Enter") {
             if (getComputedStyle(suggestions).display == "none") return;
 
-            let currentSelected = Array.from(suggestions.children).indexOf(
-                suggestions.querySelector(".selected"),
-            );
+            let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
             suggestions.children[Math.max(0, currentSelected)].click();
 
             event.preventDefault();
         } else if (event.code === "ArrowUp") {
             if (getComputedStyle(suggestions).display == "none") return;
 
-            let currentSelected = Array.from(suggestions.children).indexOf(
-                suggestions.querySelector(".selected"),
-            );
-            if (currentSelected >= 0)
-                suggestions.children[currentSelected].classList.remove("selected");
+            let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
+            if (currentSelected >= 0) suggestions.children[currentSelected].classList.remove("selected");
 
-            currentSelected =
-                (Math.max(0, currentSelected) - 1 + suggestions.children.length) %
-                suggestions.children.length;
+            currentSelected = (Math.max(0, currentSelected) - 1 + suggestions.children.length) % suggestions.children.length;
             suggestions.children[currentSelected].classList.add("selected");
             suggestions.children[currentSelected].scrollIntoView({
                 behavior: "smooth",
@@ -121,15 +109,10 @@
         } else if (event.code === "ArrowDown") {
             if (getComputedStyle(suggestions).display == "none") return;
 
-            let currentSelected = Array.from(suggestions.children).indexOf(
-                suggestions.querySelector(".selected"),
-            );
-            if (currentSelected >= 0)
-                suggestions.children[currentSelected].classList.remove("selected");
+            let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
+            if (currentSelected >= 0) suggestions.children[currentSelected].classList.remove("selected");
 
-            currentSelected =
-                (currentSelected + 1 + suggestions.children.length) %
-                suggestions.children.length;
+            currentSelected = (currentSelected + 1 + suggestions.children.length) % suggestions.children.length;
             suggestions.children[currentSelected].classList.add("selected");
             suggestions.children[currentSelected].scrollIntoView({
                 behavior: "smooth",
@@ -191,9 +174,7 @@
 
     /** @param {string} data */
     function setup(data) {
-        const autoDelay = parseInt(
-            document.getElementById("setting_ac_delay").querySelector("input").value,
-        );
+        const autoDelay = parseInt(document.getElementById("setting_ac_delay").querySelector("input").value);
         const loraWeight = document
             .getElementById("setting_extra_networks_default_multiplier")
             .querySelector("input")
