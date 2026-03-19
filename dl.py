@@ -13,13 +13,16 @@ META = 5
 class Configs:
     escape_brackets: bool = True
     keep_underscore: bool = False
-    min_post_count: int = 150
+    min_post_count: int = 128
+    max_tag_count: int = 30000
 
 
 def _filter(tag: str) -> bool:
     if tag.endswith("request"):
         return False
     if "cosplay" in tag:
+        return False
+    if "meme" in tag:
         return False
 
     return True
@@ -44,6 +47,7 @@ params = {
 file = open("tags.csv", mode="w+", encoding="utf-8")
 queue: list[float] = []
 page: int = 0
+count: int = 0
 
 try:
     print("Downloading...")
@@ -80,6 +84,11 @@ try:
             category = tag.get("category", -1)
             if category in (GENERAL, COPYRIGHT, CHARACTER, META):
                 file.write(_preprocess(tag["name"]))
+                count += 1
+
+            if count == Configs.max_tag_count:
+                isDone = True
+                break
 
         queue.append(time.monotonic())
 

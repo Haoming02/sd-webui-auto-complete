@@ -22,22 +22,22 @@ class Trie {
         const raw_tag = is_lora ? word.substring(3) : word;
         const final_text = is_lora ? `<lora:${raw_tag}:${weight}>` : raw_tag;
 
-        const insert_str = (str) => {
+        const insert_str = (str, first) => {
             const lowered = str.toLowerCase();
             let node = this.root;
             for (const char of lowered) {
                 if (node.children[char] == undefined) node.children[char] = new TNode();
                 node = node.children[char];
             }
-            node.terminals.push({ weight: order, original: final_text });
+            node.terminals.push({ weight: order + (first ? 0 : 8192), original: final_text });
         };
 
-        insert_str(raw_tag);
+        insert_str(raw_tag, true);
 
         if (raw_tag.includes(" ")) {
             const parts = raw_tag.split(" ");
             for (const part of parts) {
-                insert_str(part);
+                insert_str(part, false);
             }
         }
     }
@@ -60,16 +60,11 @@ class Trie {
         const node = this.#searchPrefix(filter.toLowerCase());
         if (node == null) return results;
 
-        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
-
         const seen = new Set();
 
         const dfs = (currentNode) => {
-            if (results.length >= limit) return;
-
             if (currentNode.terminals.length > 0) {
                 for (const terminal of currentNode.terminals) {
-                    if (results.length >= limit) return;
                     if (!seen.has(terminal.original)) {
                         results.push({
                             word: terminal.original,
@@ -81,13 +76,16 @@ class Trie {
             }
 
             for (const char in currentNode.children) {
-                if (results.length >= limit) return;
                 dfs(currentNode.children[char]);
             }
         };
 
         dfs(node);
 
-        return results.sort((a, b) => a.weight - b.weight).map((result) => result.word);
+        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
+        return results
+            .sort((a, b) => a.weight - b.weight)
+            .map((result) => result.word)
+            .slice(0, limit);
     }
 }
