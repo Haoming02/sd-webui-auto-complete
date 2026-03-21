@@ -10,32 +10,34 @@ class TNode {
 
 /** le' Prefix Tree */
 class Trie {
-    constructor() {
+    /** @param {number} lora_weight */
+    constructor(lora_weight) {
         this.root = new TNode();
+        this.lora_weight = lora_weight;
     }
 
-    /** @param {string} word @param {number} order @param {string} weight */
-    insert(word, order, weight) {
+    /** @param {string} word @param {number} order */
+    insert(word, order) {
         if (!word) return;
 
         const is_lora = word.startsWith("<l>");
         const raw_tag = is_lora ? word.substring(3) : word;
-        const final_text = is_lora ? `<lora:${raw_tag}:${weight}>` : raw_tag;
+        const final_text = is_lora ? `<lora:${raw_tag}:${this.lora_weight}>` : raw_tag;
 
         const insert_str = (str, first) => {
-            const lowered = str.toLowerCase();
             let node = this.root;
-            for (const char of lowered) {
+            for (const char of str) {
                 if (node.children[char] == undefined) node.children[char] = new TNode();
                 node = node.children[char];
             }
-            node.terminals.push({ weight: order + (first ? 0 : 8192), original: final_text });
+            node.terminals.push({ weight: order * (first ? 1.0 : 2.0), original: final_text });
         };
 
-        insert_str(raw_tag, true);
+        const lowered = raw_tag.toLowerCase();
+        insert_str(lowered, true);
 
-        if (raw_tag.includes(" ")) {
-            const parts = raw_tag.split(" ");
+        if (lowered.includes(" ")) {
+            const [_, ...parts] = lowered.split(" ");
             for (const part of parts) {
                 insert_str(part, false);
             }

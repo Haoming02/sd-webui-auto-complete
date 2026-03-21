@@ -6,12 +6,14 @@
     let suggestions;
 
     function clear() {
-        while (suggestions.firstChild) suggestions.firstChild.remove();
+        suggestions.replaceChildren();
     }
+
     function hide() {
         suggestions.style.display = "none";
         clear();
     }
+
     function show() {
         suggestions.style.display = "block";
         suggestions.firstChild.scrollIntoView({
@@ -174,15 +176,13 @@
 
     /** @param {string} data */
     function setup(data) {
+        const loraID = "setting_extra_networks_default_multiplier";
+        const loraWeight = document.getElementById(loraID).querySelector("input").value;
         const autoDelay = parseInt(document.getElementById("setting_ac_delay").querySelector("input").value);
-        const loraWeight = document
-            .getElementById("setting_extra_networks_default_multiplier")
-            .querySelector("input")
-            .value.toString();
 
-        trie = new Trie();
+        trie = new Trie(loraWeight);
         data.split("\n").forEach((tag, order) => {
-            trie.insert(tag.trim(), order, loraWeight);
+            trie.insert(tag.trim(), order);
         });
 
         suggestions = document.createElement("ul");
@@ -202,10 +202,10 @@
 
         for (const id of IDs) {
             const textArea = document.getElementById(id)?.querySelector("textarea");
-            if (textArea != null)
-                textArea.addEventListener("keydown", (e) => {
-                    intelliSense(e, autoDelay);
-                });
+            if (textArea == null) continue;
+            textArea.addEventListener("keydown", (e) => {
+                intelliSense(e, autoDelay);
+            });
         }
 
         document.addEventListener("mousedown", (event) => {
