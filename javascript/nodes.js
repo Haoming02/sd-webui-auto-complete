@@ -2,8 +2,8 @@
 class TNode {
     constructor() {
         /** @type { Map<string, TNode> } */
-        this.children = {};
-        /** @type { Array<{weight: number, original: string}> } */
+        this.children = new Map();
+        /** @type { Array<[number, string]> } */
         this.terminals = [];
     }
 }
@@ -27,10 +27,10 @@ class Trie {
         const insert_str = (str, first) => {
             let node = this.root;
             for (const char of str) {
-                if (node.children[char] == undefined) node.children[char] = new TNode();
-                node = node.children[char];
+                if (node.children.get(char) == undefined) node.children.set(char, new TNode());
+                node = node.children.get(char);
             }
-            node.terminals.push({ weight: order * (first ? 1.0 : 2.0), original: final_text });
+            node.terminals.push([order * (first ? 1.0 : 2.0), final_text]);
         };
 
         const lowered = raw_tag.toLowerCase();
@@ -48,8 +48,8 @@ class Trie {
     #searchPrefix(filter) {
         let node = this.root;
         for (const char of filter) {
-            if (node.children[char] == undefined) return null;
-            node = node.children[char];
+            if (node.children.get(char) == undefined) return null;
+            node = node.children.get(char);
         }
         return node;
     }
@@ -66,19 +66,15 @@ class Trie {
 
         const dfs = (currentNode) => {
             if (currentNode.terminals.length > 0) {
-                for (const terminal of currentNode.terminals) {
-                    if (!seen.has(terminal.original)) {
-                        results.push({
-                            word: terminal.original,
-                            weight: terminal.weight,
-                        });
-                        seen.add(terminal.original);
-                    }
+                for (const [weight, original] of currentNode.terminals) {
+                    if (seen.has(original)) continue;
+                    results.push([original, weight]);
+                    seen.add(original);
                 }
             }
 
-            for (const char in currentNode.children) {
-                dfs(currentNode.children[char]);
+            for (const [_, child] of currentNode.children) {
+                dfs(child);
             }
         };
 
@@ -86,8 +82,8 @@ class Trie {
 
         const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
         return results
-            .sort((a, b) => a.weight - b.weight)
-            .map((result) => result.word)
+            .sort((a, b) => a[1] - b[1])
+            .map((result) => result[0])
             .slice(0, limit);
     }
 }
