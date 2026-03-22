@@ -8,6 +8,33 @@ class TNode {
     }
 }
 
+class SizedHeap {
+    /** @param {number} size */
+    constructor(size) {
+        this.maxItems = size;
+        this.data = [];
+    }
+
+    /** @param {string} text @param {number} weight */
+    push(text, weight) {
+        if (this.data.length < this.maxItems) {
+            this.data.push([text, weight]);
+            return;
+        }
+
+        for (let i = 0; i < this.data.length; i++) {
+            if (this.data[i][1] > weight) {
+                this.data[i] = [text, weight];
+                break;
+            }
+        }
+    }
+
+    array() {
+        return this.data.sort((a, b) => a[1] - b[1]).map((data) => data[0]);
+    }
+}
+
 /** le' Prefix Tree */
 class Trie {
     /** @param {number} lora_weight */
@@ -56,34 +83,29 @@ class Trie {
 
     /** @param {string} filter @returns {string[]} */
     getMatches(filter) {
-        const results = [];
-        if (!filter) return results;
+        if (!filter) return [];
 
         const node = this.#searchPrefix(filter.toLowerCase());
-        if (node == null) return results;
+        if (node == null) return [];
 
+        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
+        const results = new SizedHeap(limit);
         const seen = new Set();
 
         const dfs = (currentNode) => {
             if (currentNode.terminals.length > 0) {
                 for (const [weight, original] of currentNode.terminals) {
                     if (seen.has(original)) continue;
-                    results.push([original, weight]);
+                    results.push(original, weight);
                     seen.add(original);
                 }
             }
 
-            for (const [_, child] of currentNode.children) {
-                dfs(child);
-            }
+            for (const [_, child] of currentNode.children) dfs(child);
         };
 
         dfs(node);
 
-        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
-        return results
-            .sort((a, b) => a[1] - b[1])
-            .map((result) => result[0])
-            .slice(0, limit);
+        return results.array();
     }
 }
