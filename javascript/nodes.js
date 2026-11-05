@@ -8,33 +8,6 @@ class TNode {
     }
 }
 
-class SizedHeap {
-    /** @param {number} size */
-    constructor(size) {
-        this.maxItems = size;
-        this.data = [];
-    }
-
-    /** @param {string} text @param {number} weight */
-    push(text, weight) {
-        if (this.data.length < this.maxItems) {
-            this.data.push([text, weight]);
-            return;
-        }
-
-        for (let i = 0; i < this.data.length; i++) {
-            if (this.data[i][1] > weight) {
-                this.data[i] = [text, weight];
-                break;
-            }
-        }
-    }
-
-    array() {
-        return this.data.sort((a, b) => a[1] - b[1]).map((data) => data[0]);
-    }
-}
-
 /** le' Prefix Tree */
 class Trie {
     /** @param {number} lora_weight */
@@ -54,7 +27,7 @@ class Trie {
         const insert_str = (str, first) => {
             let node = this.root;
             for (const char of str) {
-                if (node.children.get(char) == undefined) node.children.set(char, new TNode());
+                if (node.children.get(char) === undefined) node.children.set(char, new TNode());
                 node = node.children.get(char);
             }
             node.terminals.push([order * (first ? 1.0 : 2.0), final_text]);
@@ -63,11 +36,14 @@ class Trie {
         const lowered = raw_tag.toLowerCase();
         insert_str(lowered, true);
 
-        if (lowered.includes(" ")) {
-            const [_, ...parts] = lowered.split(" ");
-            for (const part of parts) {
-                insert_str(part, false);
-            }
+        const tokens = raw_tag
+            .split(/[\s\-_]+|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?<![vV])(?=[0-9])|(?<=[0-9])(?=[a-zA-Z])|(?=[vV][0-9])/)
+            .map((t) => t.toLowerCase())
+            .filter((t) => t.length > 0)
+            .slice(1);
+
+        for (const part of tokens) {
+            insert_str(part, false);
         }
     }
 
@@ -75,37 +51,35 @@ class Trie {
     #searchPrefix(filter) {
         let node = this.root;
         for (const char of filter) {
-            if (node.children.get(char) == undefined) return null;
+            if (node.children.get(char) === undefined) return null;
             node = node.children.get(char);
         }
         return node;
     }
 
-    /** @param {string} filter @returns {string[]} */
+    /** @param {string} filter @returns {string[]} sorted by relevance (best first) */
     getMatches(filter) {
         if (!filter) return [];
 
         const node = this.#searchPrefix(filter.toLowerCase());
         if (node == null) return [];
 
-        const limit = document.getElementById("setting_ac_limit").querySelector("input").value;
-        const results = new SizedHeap(limit);
+        const results = [];
         const seen = new Set();
 
         const dfs = (currentNode) => {
-            if (currentNode.terminals.length > 0) {
-                for (const [weight, original] of currentNode.terminals) {
-                    if (seen.has(original)) continue;
-                    results.push(original, weight);
-                    seen.add(original);
-                }
+            for (const [weight, original] of currentNode.terminals) {
+                if (seen.has(original)) continue;
+                results.push([original, weight]);
+                seen.add(original);
             }
 
             for (const [_, child] of currentNode.children) dfs(child);
         };
 
         dfs(node);
+        results.sort((a, b) => a[1] - b[1]);
 
-        return results.array();
+        return results.map(([text]) => text);
     }
 }

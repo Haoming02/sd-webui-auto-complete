@@ -2,6 +2,8 @@
     /** @type {Trie} */
     let trie;
 
+    let lorasFirst = false;
+
     /** @type {HTMLUListElement} */
     let suggestions;
 
@@ -47,7 +49,13 @@
             start++;
         }
 
-        const matches = trie.getMatches(currentWord);
+        const allMatches = trie.getMatches(currentWord);
+
+        const limit = parseInt(document.getElementById("setting_ac_limit").querySelector("input").value);
+        const loras = allMatches.filter((tag) => tag.startsWith("<lora:"));
+        const tags = allMatches.filter((tag) => !tag.startsWith("<lora:")).slice(0, limit);
+
+        const matches = lorasFirst ? [...loras, ...tags] : [...tags, ...loras];
         if (matches.length === 0) {
             hide();
             return;
@@ -88,14 +96,14 @@
     /** @param {KeyboardEvent} event @param {number} autoDelay */
     function intelliSense(event, autoDelay) {
         if (event.code === "Enter") {
-            if (getComputedStyle(suggestions).display == "none") return;
+            if (getComputedStyle(suggestions).display === "none") return;
 
-            let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
+            const currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
             suggestions.children[Math.max(0, currentSelected)].click();
 
             event.preventDefault();
         } else if (event.code === "ArrowUp") {
-            if (getComputedStyle(suggestions).display == "none") return;
+            if (getComputedStyle(suggestions).display === "none") return;
 
             let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
             if (currentSelected >= 0) suggestions.children[currentSelected].classList.remove("selected");
@@ -109,7 +117,7 @@
 
             event.preventDefault();
         } else if (event.code === "ArrowDown") {
-            if (getComputedStyle(suggestions).display == "none") return;
+            if (getComputedStyle(suggestions).display === "none") return;
 
             let currentSelected = Array.from(suggestions.children).indexOf(suggestions.querySelector(".selected"));
             if (currentSelected >= 0) suggestions.children[currentSelected].classList.remove("selected");
@@ -144,38 +152,56 @@
         }
     }
 
-    /** @param {string} text @returns {number} */
-    function getTextWidth(text) {
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        context.font = "bold 12px sans-serif";
-        return context.measureText(text).width;
-    }
+    const MIRROR_PROPS = [
+        "fontFamily", "fontSize", "fontWeight", "fontStyle", "letterSpacing", "lineHeight",
+        "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+        "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
+        "wordBreak", "tabSize",
+    ];
+
+    const mirror = document.createElement("div");
 
     /** @param {HTMLTextAreaElement} input */
     function positionSuggestions(input) {
-        const currentValue = input.value;
-        const caret = input.selectionStart;
-        const prevNewline = currentValue.slice(0, caret).lastIndexOf("\n");
+        const cs = getComputedStyle(input);
+        for (const prop of MIRROR_PROPS) mirror.style[prop] = cs[prop];
+
+        mirror.style.position = "absolute";
+        mirror.style.visibility = "hidden";
+        mirror.style.overflow = "hidden";
+        mirror.style.boxSizing = "border-box";
+        mirror.style.whiteSpace = "pre-wrap";
+        mirror.style.width = `${input.offsetWidth}px`;
+        mirror.style.height = "auto";
+
+        mirror.textContent = input.value.slice(0, input.selectionStart);
+
+        const marker = document.createElement("span");
+        marker.textContent = "X";
+        mirror.appendChild(marker);
+
         const rect = input.getBoundingClientRect();
+        const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
 
-        const line = currentValue.slice(Math.max(0, prevNewline), caret);
-        const lineCount = currentValue.slice(0, caret).split("\n").length + 1;
+        const w = rect.left + window.scrollX + marker.offsetLeft - input.scrollLeft;
+        const t = rect.top + window.scrollY + marker.offsetTop - input.scrollTop + lineHeight;
 
-        const w = rect.left + window.scrollX + getTextWidth(line);
-        const t = rect.top + window.scrollY + lineCount * 16;
-
-        if (w < rect.width) {
+        if (w < rect.right + window.scrollX) {
             suggestions.style.left = `${w}px`;
             suggestions.style.top = `${t}px`;
         } else {
             suggestions.style.left = `${rect.left + window.scrollX}px`;
-            suggestions.style.top = `${rect.bottom - 8}px`;
+            suggestions.style.top = `${rect.bottom + window.scrollY - 8}px`;
         }
     }
 
     /** @param {string} data */
     function setup(data) {
+        const extrasEl = document.getElementById("setting_ac_extras");
+        lorasFirst = extrasEl
+            ? Array.from(extrasEl.querySelectorAll("input")).some((i) => i.checked && i.value === "Prepend")
+            : false;
+
         const loraID = "setting_extra_networks_default_multiplier";
         const loraWeight = document.getElementById(loraID).querySelector("input").value;
         const autoDelay = parseInt(document.getElementById("setting_ac_delay").querySelector("input").value);
@@ -188,6 +214,7 @@
         suggestions = document.createElement("ul");
         suggestions.id = "suggestions";
 
+        document.body.appendChild(mirror);
         document.getElementById("quicksettings").appendChild(suggestions);
 
         /** Expandable List of IDs in 1 place */

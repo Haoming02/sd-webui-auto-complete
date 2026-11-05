@@ -21,11 +21,11 @@ def extra_networks() -> str:
         for file in files:
             items.append(file.stem)
 
-    loras = Path(cmd_opts.lora_dir)
-    for ext in EXTENSIONS:
-        files = loras.glob(f"**/*{ext}")
-        for file in files:
-            items.append(f"<l>{file.stem}")
+    for loras in map(Path, (cmd_opts.lora_dir, *cmd_opts.lora_dirs)):
+        for ext in EXTENSIONS:
+            files = loras.glob(f"**/*{ext}")
+            for file in files:
+                items.append(f"<l>{file.stem}")
 
     return "\n".join(items)
 
@@ -47,13 +47,8 @@ class ACServer(scripts.Script):
         with open(csv, "r", encoding="utf-8") as file:
             tags = file.read()
 
-        if (extras := getattr(opts, "ac_extras", "Off")) != "Off":
-            networks = extra_networks()
-            if extras == "Prepend":
-                tags = f"{networks}\n{tags}"
-            else:
-                tags = f"{tags}\n{networks}"
-            del networks
+        if getattr(opts, "ac_extras", "Off") != "Off":
+            tags = f"{tags}\n{extra_networks()}"
 
         custom = os.path.join(_dir, "custom.csv")
         if os.path.isfile(custom):
