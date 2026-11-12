@@ -1,8 +1,11 @@
 # https://danbooru.donmai.us/wiki_pages/api:tags
 
+import os
 import time
+from pathlib import Path
 
-import requests
+import curl_cffi
+from curl_cffi.requests.exceptions import RequestException
 
 GENERAL = 0
 COPYRIGHT = 3
@@ -13,8 +16,8 @@ META = 5
 class Configs:
     escape_brackets: bool = True
     keep_underscore: bool = False
-    min_post_count: int = 128
-    max_tag_count: int = 30000
+    min_post_count: int = 256
+    max_tag_count: int = 40000
 
 
 def _filter(tag: str) -> bool:
@@ -38,16 +41,21 @@ def _preprocess(tag: str) -> str:
 
 API = "https://danbooru.donmai.us/tags.json"
 params = {
-    "limit": 2000,
+    "limit": 1000,
     "search[hide_empty]": True,
     "search[is_deprecated]": False,
     "search[order]": "count",
 }
 
-file = open("tags.csv", mode="w+", encoding="utf-8")
+OUT = Path(__file__).with_name("tags.csv")
+TMP = Path(__file__).with_name("tags.csv.tmp")
+
+file = open(TMP, mode="w", encoding="utf-8")
 queue: list[float] = []
 page: int = 0
 count: int = 0
+
+success: bool = False
 
 try:
     print("Downloading...")
@@ -65,7 +73,7 @@ try:
         params["page"] = page
         print(f"Page {page}...", end="\r")
 
-        response = requests.get(API, params=params, timeout=2.5)
+        response = curl_cffi.get(API, params=params, timeout=5.0, impersonate="chrome")
         if response.status_code != 200:
             raise ConnectionError(response.status_code)
 
@@ -78,12 +86,13 @@ try:
                 isDone = True
                 break
 
-            if not _filter(tag["name"]):
+            name = tag["name"]
+            if not _filter(name):
                 continue
 
             category = tag.get("category", -1)
             if category in (GENERAL, COPYRIGHT, CHARACTER, META):
-                file.write(_preprocess(tag["name"]))
+                file.write(_preprocess(name))
                 count += 1
 
             if count == Configs.max_tag_count:
@@ -92,7 +101,9 @@ try:
 
         queue.append(time.monotonic())
 
-except (TimeoutError, ConnectionError):
+    success = True
+
+except (RequestException, ConnectionError):
     print("Failed to download page...")
 except (KeyboardInterrupt, EOFError):
     print("Interrupted...")
@@ -101,4 +112,9 @@ except Exception as e:
 finally:
     file.flush()
     file.close()
-    print("Download Finished!")
+    if success:
+        os.replace(TMP, OUT)
+        print("Download Finished!")
+    else:
+        TMP.unlink(missing_ok=True)
+        print("Download Incomplete... Keeping previous tags.csv")
